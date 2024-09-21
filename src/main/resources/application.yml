@@ -1,1 +1,21 @@
-spring.application.name=ZB-Lunch-Recommend
+spring:
+  application:
+    name: ZB-Lunch-Recommend
+
+---
+spring:
+  profiles:
+    group:
+      local: profile1
+      dev: profile2
+      stg: profile3
+      prod: profile4
+---
+spring:
+  config:
+    activate:
+      on-profile: profile1
+clova:
+  id: ${CLOVA.ID}
+  secret: ${CLOVA_SECRET}
+---
