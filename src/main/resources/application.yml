@@ -1,3 +1,6 @@
+server:
+  port: 1212
+
 spring:
   application:
     name: ZB-Lunch-Recommend
@@ -16,6 +19,6 @@ spring:
     activate:
       on-profile: profile1
 clova:
-  id: ${CLOVA.ID}
-  secret: ${CLOVA_SECRET}
+  key: ${CLOVA_API_KEY}
+  gateway: ${CLOVA_GATEWAY_KEY}
 ---
