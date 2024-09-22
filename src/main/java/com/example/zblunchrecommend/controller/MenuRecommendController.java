@@ -1,13 +1,17 @@
 package com.example.zblunchrecommend.controller;
 
+import com.example.zblunchrecommend.dto.MenuRecommendResponse;
+import com.example.zblunchrecommend.dto.MenuRecommendRequest;
 import com.example.zblunchrecommend.service.ClovaStudioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/api")
@@ -18,7 +22,11 @@ public class MenuRecommendController {
 
     @PostMapping("/menuRecommend")
     @Operation(summary = "메뉴 추천 API")
-    public String menuRecommend() {
-        return clovaStudioService.clovaMenuRecommend();
+    @ResponseBody
+    public MenuRecommendResponse menuRecommend(MenuRecommendRequest menuRecommendRequest) {
+//        menuRecommendRequest.setChooseType("비선호");
+//        menuRecommendRequest.setFoodType(List.of("간단한 음식", "면", "국"));
+//        menuRecommendRequest.setFoodDetail(List.of("빵"));
+        return clovaStudioService.clovaMenuRecommend(menuRecommendRequest);
     }
 }
