@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -18,4 +17,10 @@ public class ChatCompletionsRequest {
     private Integer maxTokens = 2000;
     private Boolean includeAiFilters = false;
     private Integer seed = 0;
+
+    public static ChatCompletionsRequest create(List<ChatMessage> chatMessages) {
+        ChatCompletionsRequest chatCompletionsRequest = new ChatCompletionsRequest();
+        chatCompletionsRequest.setMessages(chatMessages);
+        return chatCompletionsRequest;
+    }
 }

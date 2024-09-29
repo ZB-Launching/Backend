@@ -1,55 +1,73 @@
 package com.example.zblunchrecommend.service;
 
-import com.example.zblunchrecommend.dto.ChatCompletionsRequest;
-import com.example.zblunchrecommend.dto.ChatMessage;
-import com.example.zblunchrecommend.enums.Role;
+import com.example.zblunchrecommend.dto.*;
+import com.example.zblunchrecommend.enums.ChooseType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ClovaStudioService {
-    @Value("${clova.id}")
-    private String clientId;
-    @Value("${clova.secret}")
-    private String clientSecret;
+    public static final String X_NCP_CLOVASTUDIO_API_KEY = "X-NCP-CLOVASTUDIO-API-KEY";
+    public static final String X_NCP_APIGW_API_KEY = "X-NCP-APIGW-API-KEY";
+    @Value("${clova.key}")
+    private String clientAPIKey;
+    @Value("${clova.gateway}")
+    private String clientGateway;
+    private final WebClient webClient;
 
-    private String clovaApiUrl = "https://clovastudio.apigw.ntruss.com/v1/chat-completions/HCX-003";
+    public ClovaStudioService(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.baseUrl("https://clovastudio.stream.ntruss.com").build();
+    }
 
-    public String clovaMenuRecommend() {
-        // 요청 헤더
-        HttpHeaders requestHeaders = new HttpHeaders();
-
-        requestHeaders.set("X-NCP-CLOVASTUDIO-API-KEY", "");
-        requestHeaders.set("X-NCP-APIGW-API-KEY", "");
-        requestHeaders.set("Content-Type", "application/json");
-
+    public MenuRecommendResponse clovaMenuRecommend(MenuRecommendRequest menuRecommendRequest) {
         // Clova API에 전달할 메시지
-        String systemMsg = "1. 사용자의 위치와 취향을 고려해서 점심 메뉴를 추천해야 합니다.";
-        String userMsg = String.format("점심 메뉴를 추천해줘. 사용자의 선택: %s, 사용자의 취향: %s", "dd", "ddd"); // 추후 수정
+        String userMsg = getUserMsg(menuRecommendRequest);
 
         // 요청 객체
-        ChatMessage systemChatMessage = new ChatMessage();
-        systemChatMessage.setRole(Role.system);
-        systemChatMessage.setContent(systemMsg);
-
-        ChatMessage userChatMessage = new ChatMessage();
-        userChatMessage.setRole(Role.user);
-        userChatMessage.setContent(userMsg);
+        ChatMessage systemChatMessage = ChatMessage.createSystemMsg();
+        ChatMessage userChatMessage = ChatMessage.createUserMsg(userMsg);
 
         List<ChatMessage> chatMessages = List.of(systemChatMessage, userChatMessage);
 
-        ChatCompletionsRequest chatCompletionsRequest = new ChatCompletionsRequest();
-        chatCompletionsRequest.setMessages(chatMessages);
+        ChatCompletionsRequest chatCompletionsRequest = ChatCompletionsRequest.create(chatMessages);
 
-        return null;
+        //Clova API 통신
+        ChatCompletionsResponse response = webClient.post()
+                .uri("/testapp/v1/chat-completions/HCX-003")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(X_NCP_CLOVASTUDIO_API_KEY, clientAPIKey)
+                .header(X_NCP_APIGW_API_KEY, clientGateway)
+                .bodyValue(chatCompletionsRequest)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve() // 요청 전송
+                .bodyToMono(ChatCompletionsResponse.class)
+                .block();
+
+        String menu = response.getResult().getMessage().getContent();
+        return new MenuRecommendResponse(menu);
+    }
+
+    private String getUserMsg(MenuRecommendRequest menuRecommendRequest) {
+        List<String> foodType = menuRecommendRequest.getFoodType();
+        String foodList = String.join(", ", foodType);
+
+        if (ChooseType.PREFERENCES.getValue().equals(menuRecommendRequest.getChooseType())) {
+            return String.format(ChooseType.PREFERENCES.getContentFormat(),
+                    menuRecommendRequest.getChooseType(),
+                    foodList,
+                    menuRecommendRequest.getFoodDetail());
+        } else if (ChooseType.NOT_PREFERENCES.getValue().equals(menuRecommendRequest.getChooseType())) {
+            return String.format(ChooseType.NOT_PREFERENCES.getContentFormat(),
+                    menuRecommendRequest.getChooseType(),
+                    foodList);
+        } else {
+            return String.format(ChooseType.RANDOM.getContentFormat(),
+                    menuRecommendRequest.getChooseType());
+        }
     }
 }
-
-
-
